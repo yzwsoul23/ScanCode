@@ -458,13 +458,13 @@ function updateResultsTable() {
     
     tbody.innerHTML = scannedResults.map((result, index) => `
         <tr data-id="${result.id}">
-            <td>${index + 1}</td>
-            <td>${result.barcode.slice(-4)}</td>
+            <td style="text-align: right;">${index + 1}</td>
+            <td style="text-align: center;">${result.barcode.slice(-4)}</td>
             <td>${result.name}</td>
-            <td>${result.spec}</td>
-            <td>${result.boxCount}</td>
-            <td>${result.bagCount}</td>
-            <td>${result.total}</td>
+            <td style="text-align: center;">${result.spec}</td>
+            <td style="text-align: right;">${result.boxCount}</td>
+            <td style="text-align: right;">${result.bagCount}</td>
+            <td style="text-align: right;">${result.total}</td>
         </tr>
     `).join('');
     
