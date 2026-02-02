@@ -311,6 +311,117 @@
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
 
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h3 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        .modal-header .barcode {
+            color: #667eea;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        .product-info-display {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .product-info-display .product-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .product-info-display .product-spec {
+            font-size: 14px;
+            color: #666;
+        }
+        .quantity-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .quantity-input-group .input-wrapper {
+            flex: 1;
+        }
+        .quantity-input-group label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .quantity-input-group input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .quantity-input-group input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .total-quantity {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-footer .btn {
+            flex: 1;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 5px;
@@ -411,8 +522,7 @@
             <div class="input-group">
                 <input type="text" id="barcodeInput" placeholder="请输入或扫描商品条码..." autofocus>
                 <button class="btn" onclick="searchByBarcode()">🔍 查询</button>
-                <button class="btn btn-secondary" onclick="startCamera()">📷 开启摄像头</button>
-                <button class="btn btn-success" onclick="stopCamera()">⏹️ 关闭摄像头</button>
+                <button class="btn btn-secondary" onclick="startCamera()">📷 扫描</button>
             </div>
             <div class="camera-container" id="cameraContainer">
                 <div id="reader"></div>
@@ -432,6 +542,9 @@
                             <th>商品条码</th>
                             <th>商品名称</th>
                             <th>规格</th>
+                            <th>箱数</th>
+                            <th>袋数</th>
+                            <th>总数量</th>
                             <th>扫描时间</th>
                         </tr>
                     </thead>
@@ -467,6 +580,38 @@
     </div>
 
     <div class="notification" id="notification"></div>
+
+    <div class="modal-overlay" id="quantityModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>商品盘点</h3>
+                <div class="barcode" id="modalBarcode"></div>
+            </div>
+            <div class="modal-body">
+                <div class="product-info-display">
+                    <div class="product-name" id="modalProductName"></div>
+                    <div class="product-spec">规格: <span id="modalProductSpec"></span></div>
+                </div>
+                <div class="quantity-input-group">
+                    <div class="input-wrapper">
+                        <label>箱数</label>
+                        <input type="number" id="boxCount" min="0" value="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="input-wrapper">
+                        <label>袋数</label>
+                        <input type="number" id="bagCount" min="0" value="0" oninput="calculateTotal()">
+                    </div>
+                </div>
+                <div class="total-quantity">
+                    总数量: <span id="totalQuantity">0</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="cancelModal()">取消</button>
+                <button class="btn" onclick="confirmQuantity()">完成</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         const productData = [
@@ -694,6 +839,7 @@
         let scannedResults = [];
         let html5QrCode = null;
         let isCameraRunning = false;
+        let currentProduct = null;
 
         function searchByBarcode() {
             const barcode = document.getElementById('barcodeInput').value.trim();
@@ -704,20 +850,22 @@
             
             const product = productData.find(p => p.barcode === barcode);
             if (product) {
-                addResult(product);
-                showNotification(`找到商品: ${product.name}`);
+                showQuantityModal(product);
                 document.getElementById('barcodeInput').value = '';
             } else {
                 showNotification('未找到该条码对应的商品', 'error');
             }
         }
 
-        function addResult(product) {
+        function addResult(product, boxCount = 0, bagCount = 0, total = 1) {
             const now = new Date();
             const timeString = now.toLocaleTimeString('zh-CN');
             
             const result = {
                 ...product,
+                boxCount: boxCount,
+                bagCount: bagCount,
+                total: total,
                 scanTime: timeString,
                 scanOrder: scannedResults.length + 1
             };
@@ -751,6 +899,9 @@
                     <td>${result.barcode}</td>
                     <td>${result.name}</td>
                     <td>${result.spec}</td>
+                    <td>${result.boxCount}</td>
+                    <td>${result.bagCount}</td>
+                    <td>${result.total}</td>
                     <td>${result.scanTime}</td>
                 </tr>
             `).join('');
@@ -769,6 +920,18 @@
                         <div class="info-item">
                             <span class="info-label">规格:</span>
                             <span>${result.spec}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">箱数:</span>
+                            <span>${result.boxCount}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">袋数:</span>
+                            <span>${result.bagCount}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">总数量:</span>
+                            <span style="color: #667eea; font-weight: bold;">${result.total}</span>
                         </div>
                     </div>
                     <div class="scan-time">扫描时间: ${result.scanTime}</div>
@@ -860,11 +1023,52 @@
         function onScanSuccess(decodedText, decodedResult) {
             const product = productData.find(p => p.barcode === decodedText);
             if (product) {
-                addResult(product);
-                showNotification(`扫描成功: ${product.name}`);
+                showQuantityModal(product);
+                stopCamera();
             } else {
                 showNotification(`未找到条码: ${decodedText}`, 'error');
             }
+        }
+
+        function showQuantityModal(product) {
+            currentProduct = product;
+            document.getElementById('modalBarcode').textContent = product.barcode;
+            document.getElementById('modalProductName').textContent = product.name;
+            document.getElementById('modalProductSpec').textContent = product.spec;
+            document.getElementById('boxCount').value = 0;
+            document.getElementById('bagCount').value = 0;
+            document.getElementById('totalQuantity').textContent = 0;
+            document.getElementById('quantityModal').classList.add('active');
+        }
+
+        function calculateTotal() {
+            const boxCount = parseInt(document.getElementById('boxCount').value) || 0;
+            const bagCount = parseInt(document.getElementById('bagCount').value) || 0;
+            const spec = parseInt(currentProduct.spec) || 0;
+            const total = boxCount * spec + bagCount;
+            document.getElementById('totalQuantity').textContent = total;
+        }
+
+        function cancelModal() {
+            document.getElementById('quantityModal').classList.remove('active');
+            currentProduct = null;
+        }
+
+        function confirmQuantity() {
+            const boxCount = parseInt(document.getElementById('boxCount').value) || 0;
+            const bagCount = parseInt(document.getElementById('bagCount').value) || 0;
+            const spec = parseInt(currentProduct.spec) || 0;
+            const total = boxCount * spec + bagCount;
+            
+            if (total === 0) {
+                showNotification('请输入数量', 'error');
+                return;
+            }
+            
+            addResult(currentProduct, boxCount, bagCount, total);
+            document.getElementById('quantityModal').classList.remove('active');
+            showNotification(`已添加: ${currentProduct.name}，总数量 ${total}`);
+            currentProduct = null;
         }
 
         function onScanFailure(error) {
