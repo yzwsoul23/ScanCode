@@ -963,6 +963,40 @@ function exportToCSV() {
     showNotification('导出成功');
 }
 
+function copyToClipboard() {
+    if (scannedResults.length === 0) {
+        showNotification('没有数据可复制', 'error');
+        return;
+    }
+    
+    let clipboardContent = '';
+    
+    scannedResults.forEach((result, index) => {
+        let quantityText = '';
+        if (result.boxCount > 0 && result.bagCount > 0) {
+            quantityText = `${result.boxCount}箱${result.bagCount}袋`;
+        } else if (result.boxCount > 0) {
+            quantityText = `${result.boxCount}箱`;
+        } else if (result.bagCount > 0) {
+            quantityText = `${result.bagCount}袋`;
+        } else {
+            quantityText = '0';
+        }
+        
+        const line = `${result.barcode} ${result.name}*${result.spec} ${quantityText} ${result.total}`;
+        clipboardContent += line + '\n';
+    });
+    
+    navigator.clipboard.writeText(clipboardContent.trim())
+        .then(() => {
+            showNotification('已复制到剪贴板');
+        })
+        .catch(err => {
+            console.error('复制失败:', err);
+            showNotification('复制失败', 'error');
+        });
+}
+
 document.getElementById('barcodeInput').addEventListener('input', function(e) {
     showSuggestions(e.target.value);
 });
