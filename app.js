@@ -583,6 +583,9 @@ function showQuantityModal(product) {
     document.getElementById('bagCount').value = '';
     document.getElementById('totalQuantity').textContent = '0';
     document.getElementById('quantityModal').classList.add('active');
+    setTimeout(() => {
+        document.getElementById('boxCount').focus();
+    }, 100);
 }
 
 function calculateTotal() {
@@ -591,6 +594,20 @@ function calculateTotal() {
     const spec = parseInt(currentProduct.spec) || 0;
     const total = boxCount * spec + bagCount;
     document.getElementById('totalQuantity').textContent = total;
+}
+
+function handleBoxCountKeypress(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        document.getElementById('bagCount').focus();
+    }
+}
+
+function handleBagCountKeypress(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        confirmQuantity();
+    }
 }
 
 function cancelModal() {
@@ -642,6 +659,9 @@ async function editResult(id) {
     document.getElementById('bagCount').value = result.bagCount;
     document.getElementById('totalQuantity').textContent = result.total;
     document.getElementById('quantityModal').classList.add('active');
+    setTimeout(() => {
+        document.getElementById('boxCount').focus();
+    }, 100);
 }
 
 async function deleteResult(id) {
@@ -862,6 +882,47 @@ function setupTableInteractions() {
     });
 }
 
+function showSuggestions(text) {
+    text = text.trim();
+    
+    if (!text) {
+        document.getElementById('searchSuggestions').style.display = 'none';
+        return;
+    }
+    
+    const filtered = productData.filter(product => 
+        product.name.toLowerCase().includes(text.toLowerCase())
+    );
+    
+    if (filtered.length === 0) {
+        document.getElementById('searchSuggestions').style.display = 'none';
+        return;
+    }
+    
+    const suggestionsHTML = filtered.map(product => `
+        <div class="search-suggestion-item" data-barcode="${product.barcode}">
+            <span style="color: #667eea; font-weight: bold;">${product.barcode.slice(-4)}</span>
+            <span style="margin-left: 10px;">${product.name}</span>
+        </div>
+    `).join('');
+    
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    suggestionsContainer.innerHTML = suggestionsHTML;
+    suggestionsContainer.style.display = 'block';
+    
+    document.querySelectorAll('.search-suggestion-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const barcode = item.dataset.barcode;
+            const product = productData.find(p => p.barcode === barcode);
+            if (product) {
+                showQuantityModal(product);
+                document.getElementById('barcodeInput').value = '';
+                document.getElementById('searchSuggestions').style.display = 'none';
+            }
+        });
+    });
+}
+
 function exportToCSV() {
     if (scannedResults.length === 0) {
         showNotification('没有数据可导出', 'error');
@@ -902,15 +963,14 @@ function exportToCSV() {
     showNotification('导出成功');
 }
 
-document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        searchByBarcode();
-    }
+document.getElementById('barcodeInput').addEventListener('input', function(e) {
+    showSuggestions(e.target.value);
 });
 
-document.getElementById('barcodeInput').addEventListener('input', function(e) {
-    const value = e.target.value;
-    if (value.length === 13) {
-        searchByBarcode();
+document.addEventListener('click', function(e) {
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    const inputElement = document.getElementById('barcodeInput');
+    if (!suggestionsContainer.contains(e.target) && e.target !== inputElement) {
+        suggestionsContainer.style.display = 'none';
     }
 });

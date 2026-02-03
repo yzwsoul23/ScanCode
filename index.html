@@ -19,11 +19,11 @@
 
         <div class="scan-section">
             <div class="input-group">
-                <input type="text" id="barcodeInput" placeholder="请输入或扫描商品条码..." autofocus>
-                <div class="header-buttons">
-                    <button class="btn" onclick="searchByBarcode()">🔍 查询</button>
-                <button class="btn btn-secondary" onclick="startCamera()">📷 扫描</button>
+                <div class="input-wrapper">
+                    <input type="text" id="barcodeInput" placeholder="请输入商品名称..." autofocus>
+                    <div id="searchSuggestions"></div>
                 </div>
+                <button class="btn btn-secondary" onclick="startCamera()">📷 扫描</button>
             </div>
             <div class="camera-container" id="cameraContainer">
                 <div id="reader"></div>
@@ -84,11 +84,11 @@
                 <div class="quantity-input-group">
                     <div class="input-wrapper">
                         <label>箱数</label>
-                        <input type="number" id="boxCount" min="0" value="" oninput="calculateTotal()">
+                        <input type="number" id="boxCount" min="0" value="" oninput="calculateTotal()" onkeypress="handleBoxCountKeypress(event)">
                     </div>
                     <div class="input-wrapper">
                         <label>袋数</label>
-                        <input type="number" id="bagCount" min="0" value="" oninput="calculateTotal()">
+                        <input type="number" id="bagCount" min="0" value="" oninput="calculateTotal()" onkeypress="handleBagCountKeypress(event)">
                     </div>
                 </div>
                 <div class="total-quantity">
