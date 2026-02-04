@@ -584,7 +584,8 @@ function showQuantityModal(product) {
     document.getElementById('totalQuantity').textContent = '0';
     document.getElementById('quantityModal').classList.add('active');
     setTimeout(() => {
-        document.getElementById('boxCount').focus();
+        const focusInput = document.getElementById('focusInputSelect').value;
+        document.getElementById(focusInput === 'box' ? 'boxCount' : 'bagCount').focus();
     }, 100);
 }
 
@@ -660,7 +661,8 @@ async function editResult(id) {
     document.getElementById('totalQuantity').textContent = result.total;
     document.getElementById('quantityModal').classList.add('active');
     setTimeout(() => {
-        document.getElementById('boxCount').focus();
+        const focusInput = document.getElementById('focusInputSelect').value;
+        document.getElementById(focusInput === 'box' ? 'boxCount' : 'bagCount').focus();
     }, 100);
 }
 
