@@ -893,7 +893,8 @@ function showSuggestions(text) {
     }
     
     const filtered = productData.filter(product => 
-        product.name.toLowerCase().includes(text.toLowerCase())
+        product.name.toLowerCase().includes(text.toLowerCase()) || 
+        product.barcode.includes(text)
     );
     
     if (filtered.length === 0) {
